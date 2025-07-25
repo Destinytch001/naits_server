@@ -177,39 +177,37 @@ def get_user_resources():
     except Exception as e:
         print(f"User Resource Error: {e}")
         return jsonify(success=False, error="Failed to fetch user resources"), 500
-
-# -----------------------------
-# ✅ Admin: Get All Resources (with filters + search)
-# -----------------------------
-@resources_bp.route('/', methods=['GET'])
-def get_all_resources():
+@resources_bp.route('/all', methods=['GET'])
+def get_all_resources_unfiltered():
     try:
-        query = {}
-        
-        # Add filters
-        for key in ['department', 'level', 'category', 'file_type']:
-            if value := request.args.get(key):
-                query[key] = value
-        
-        # Add search
-        if title := request.args.get('title'):
-            query['title'] = {'$regex': title, '$options': 'i'}
-        
-        # Pagination
+        # Pagination parameters (with defaults)
         page = max(1, int(request.args.get('page', 1)))
         limit = max(1, min(100, int(request.args.get('limit', 20))))
         skip = (page - 1) * limit
 
-        # Query database
-        cursor = resources_collection.find(query)\
-            .sort('created_at', DESCENDING)\
-            .skip(skip).limit(limit)
-        
+        # Get total count for pagination metadata
+        total_resources = resources_collection.count_documents({})
+
+        # Fetch all resources with pagination
+        cursor = resources_collection.find({})\
+                   .sort('created_at', DESCENDING)\
+                   .skip(skip).limit(limit)
+
         resources = [serialize_resource(r) for r in cursor]
-        return jsonify(success=True, resources=resources), 200
+        
+        return jsonify(
+            success=True,
+            resources=resources,
+            pagination={
+                'total': total_resources,
+                'page': page,
+                'limit': limit,
+                'has_more': (skip + limit) < total_resources
+            }
+        ), 200
 
     except Exception as e:
-        print(f"Get All Error: {e}")
+        print(f"Get All Unfiltered Error: {e}")
         return jsonify(success=False, error="Failed to load resources"), 500
 
 # -----------------------------
