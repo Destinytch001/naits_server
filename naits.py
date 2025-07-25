@@ -59,6 +59,7 @@ init_faculty_wear_routes(app, db)
 init_sponsored_ads_module(app)
 # Enable CORS
 origins = os.environ.get("ALLOWED_ORIGINS").split(",")
+origins = ["https://naits.destinytch.com.ng"]
 CORS(app,
      resources={r"/*": {"origins": origins}},
      supports_credentials=True,
